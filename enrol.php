@@ -15,17 +15,20 @@ if( ( isset($chkTableExists[0]) ) && ( isset( $chkTableExists[0]->istableexists 
 	$DB->execute("CREATE TABLE mdl_user_enrolments_reserve ( id int PRIMARY KEY NOT NULL AUTO_INCREMENT, mue_id bigint(20) NOT NULL, status bigint(20) NOT NULL, enrolid bigint(20) NOT NULL, userid bigint(20) NOT NULL, timestart bigint(20) NOT NULL, timeend bigint(20) NOT NULL, modifierid bigint(20) NOT NULL, timecreated bigint(20) NOT NULL, timemodified bigint(20) NOT NULL, reservedat bigint(20) NOT NULL, flagused boolean DEFAULT false ) ");
 }
 
-$objuserenrolments = $DB->get_record_sql('SELECT ue.* FROM {user_enrolments} ue WHERE ue.userid = ? AND ue.enrolid = ( SELECT e.id FROM {enrol} e  WHERE enrol = ? AND courseid = ? )', [$USER->id, 'self', $courseId]);
+$objuserenrolments = $DB->get_record_sql('SELECT ue.* FROM {user_enrolments} ue WHERE ue.userid = ? AND ue.enrolid = ( SELECT e.id FROM {enrol} e  WHERE enrol = ? AND courseid = ? ORDER BY timecreated DESC LIMIT 1 )', [$USER->id, 'self', $courseId]);
+//echo "<pre>";
+//print_r($objuserenrolments); die;
 $ueid = $objuserenrolments->id; // user enrolment id
 
 if( ( isset($objuserenrolments) ) && ( isset($objuserenrolments->id) ) ){
-	$enrolRecordReserve = $DB->get_record_sql('SELECT uer.* FROM {user_enrolments_reserve} uer WHERE uer.mue_id = ?', [$objuserenrolments->id]);
-	if( ( isset($enrolRecordReserve) ) && ( isset($enrolRecordReserve->id) ) ){
-		$DB->execute("UPDATE {user_enrolments_reserve} SET reservedat = :reservedat WHERE mue_id = :mue_id", array( 'reservedat' => time(), "mue_id" => $objuserenrolments->id ) );
-	}
-	else{
-		$DB->execute("INSERT INTO mdl_user_enrolments_reserve ( mue_id, status, enrolid, userid, timestart, timeend, modifierid, timecreated, timemodified, reservedat, flagused ) values ( $objuserenrolments->id, $objuserenrolments->status, $objuserenrolments->enrolid, $objuserenrolments->userid, $objuserenrolments->timestart, $objuserenrolments->timeend, $objuserenrolments->modifierid, $objuserenrolments->timecreated, $objuserenrolments->timemodified, ".time().", 0 ) ");	
-	}
+        $enrolRecordReserve = $DB->get_record_sql('SELECT uer.* FROM {user_enrolments_reserve} uer WHERE uer.mue_id = ?', [$objuserenrolments->id]);
+        if( ( isset($enrolRecordReserve) ) && ( isset($enrolRecordReserve->id) ) ){
+                $DB->execute("UPDATE {user_enrolments_reserve} SET reservedat = :reservedat WHERE mue_id = :mue_id", array( 'reservedat' => time(), "mue_id" => $objuserenrolments->id ) );
+        }
+        else{
+                $timeEndToUpdate = strtotime("-1 day");
+                $DB->execute("INSERT INTO mdl_user_enrolments_reserve ( mue_id, status, enrolid, userid, timestart, timeend, modifierid, timecreated, timemodified, reservedat, flagused ) values ( $objuserenrolments->id, $objuserenrolments->status, $objuserenrolments->enrolid, $objuserenrolments->userid, $objuserenrolments->timestart, ".$timeEndToUpdate.", $objuserenrolments->modifierid, $objuserenrolments->timecreated, $objuserenrolments->timemodified, ".time().", 0 ) ");
+        }
 }
 
 $ue = $DB->get_record('user_enrolments', array('id' => $ueid), '*', MUST_EXIST);
