@@ -40,7 +40,7 @@ class paymentcheck extends \core\task\scheduled_task {
 
             if ($payment_successful) {
                 // if payment was successful, we actually have to expire the self enrolment
-                $DB->execute("UPDATE {user_enrolments} SET timeend = UNIX_TIMESTAMP() WHERE id = :mue_id", array( "mue_id" => $valUER->mue_id ) );
+                $DB->execute("UPDATE {user_enrolments} SET timeend = UNIX_TIMESTAMP( CURRENT_TIMESTAMP - INTERVAL 1 DAY ) WHERE id = :mue_id", array( "mue_id" => $valUER->mue_id ) );
 
                 // since we already processed this payment, we can remove the reserve
                 $DB->execute("DELETE FROM {user_enrolments_reserve} WHERE id = :id", [ "id" => $valUER->id ] );
